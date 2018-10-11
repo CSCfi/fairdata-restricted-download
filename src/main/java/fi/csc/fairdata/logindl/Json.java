@@ -34,7 +34,7 @@ public class Json {
 				String a = at.get("identifier").getAsString();
 				if  (a.endsWith("open") || 
 						a.endsWith("login") || 
-						a.endsWith("embargo_access"))
+						a.endsWith("embargo"))
 					return true;
 			} catch (java.lang.NullPointerException e) {
 				System.err.println("Muu virhe dataset parsinnassa: "+jo.getAsString());				
