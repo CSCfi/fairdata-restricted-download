@@ -122,10 +122,10 @@ Open kyllä, login kyllä, permit ei (tässä vaiheessa), restricted ei,  embarg
 			try {
 				String fp = jo.get("file_path").getAsString();
 				String id = jo.get("identifier").getAsString();
-				if (jo.get("open_access").getAsBoolean())
+				//if (jo.get("open_access").getAsBoolean())
 					ls.add(new Tiedosto(fp, id));
-				else
-					System.out.println(id+" Ei ollut avoin "+fp);
+				/*else
+					System.out.println(id+" Ei ollut avoin "+fp);*/
 			} catch (java.lang.NullPointerException e) {
 				System.err.println("Tiedoston tiedot vaillinaiset"+e.getMessage());
 			}					

@@ -78,9 +78,9 @@ public class Metax {
 	URL furl = null;
 	try { //+/?cr_identifier="+datasetid "&recursive=true"
 		String optio = name.equals(DIR) || name.equals(FILES) ? FILES : ""; 
-		String optio2 =  name.equals(FILES) ? "&file_fields=file_path,identifier,open_access" : ""; 
+		String optio2 =  name.equals(FILES) ? "&file_fields=file_path,identifier" : ""; 
 		if (name.equals(DIR))
-			optio2 =  "cr_identifier="+datasetid+"&recursive=true&depth=*";
+			optio2 =  "&cr_identifier="+datasetid+"&recursive=true&depth=*&file_fields=identifier,file_path&directory_fields=identifier,directory_path";
 		furl = new URL(url+id+optio+FORMAT+optio2);
 		long alku =  System.currentTimeMillis();
 		con = (HttpURLConnection) furl.openConnection();
