@@ -10,8 +10,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Base64;
 import java.util.List;
 
@@ -25,14 +30,15 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class Tiedostonkäsittely  {
 
-	private HttpServletResponse response;
+	private HttpServletResponse hsr;
 	String encoding = null; //UIDAn kirjautumistiedot
+	HttpClient httpClient = HttpClient.newBuilder().build();
 	
 	/**
 	 * encoding sisältää UIDAn kirjautumistiedot
 	 */
 	public Tiedostonkäsittely(HttpServletResponse response) {
-		this.response = response;
+		this.hsr = response;
 		try {
 			encoding = Base64.getEncoder().encodeToString((DownloadApplication.getUida()).getBytes("UTF-8"));
 		} catch (UnsupportedEncodingException e) {
@@ -45,18 +51,18 @@ public class Tiedostonkäsittely  {
 		BufferedOutputStream bof = null;
 
 		try { 
-			bof = new BufferedOutputStream(response.getOutputStream());
+			bof = new BufferedOutputStream(hsr.getOutputStream());
 			//URL url = new URL("https://avaa.tdata.fi/tmp/paituli_78835516.zip");
 			URL url = new URL(DownloadApplication.getUidaURL()+t.getIdentifier()+"/download");
 			con = (HttpURLConnection) url.openConnection();
 			con.setRequestProperty  ("Authorization", "Basic " + encoding);
 			con.setRequestMethod("GET");
-			response.setContentLengthLong(con.getContentLength()); //idabytes?
-			response.setContentType("application/octet-stream; charset=UTF-8");
+			hsr.setContentLengthLong(con.getContentLength()); //idabytes?
+			hsr.setContentType("application/octet-stream; charset=UTF-8");
 			String[] sa = t.getFile_path().split("/");
 			String filename = sa[sa.length-1];
 			try {
-				response.addHeader("Content-Disposition", "attachment; filename=\""+filename
+				hsr.addHeader("Content-Disposition", "attachment; filename=\""+filename
 						+ "\"; filename*=UTF-8''" +URLEncoder.encode(filename, "UTF-8"));
 			} catch (UnsupportedEncodingException e) {
 				System.err.println("UTF-8 ei muka löydy!");
@@ -101,11 +107,11 @@ public class Tiedostonkäsittely  {
 	 */
 	public void zip(List<Tiedosto> tl, String dsid, String metadata) {
 		System.out.println("Zippattavaksi tuli " + tl.size());
-		Zip z = new Zip(response);
+		Zip z = new Zip(hsr);
 		String zipfilename = dsid+".zip";
-		response.setContentType("application/octet-stream; charset=UTF-8");
+		hsr.setContentType("application/octet-stream; charset=UTF-8");
 		try {
-			response.addHeader("Content-Disposition", "attachment; filename=\""+zipfilename
+			hsr.addHeader("Content-Disposition", "attachment; filename=\""+zipfilename
 					+ "\"; filename*=UTF-8''" +URLEncoder.encode(zipfilename, "UTF-8"));
 		} catch (UnsupportedEncodingException e) {
 			System.err.println("UTF-8 ei muka löydy!");
@@ -130,46 +136,28 @@ public class Tiedostonkäsittely  {
 	 * @param z Zip 
 	 */
 	private void zippaa(Tiedosto t, Zip z) {
-		HttpURLConnection con = null;
+		HttpRequest request = HttpRequest.newBuilder()
+	               .uri(URI.create(DownloadApplication.getUidaURL()+t.getIdentifier()+"/download"))
+	               .header("Authorization", "Basic " + encoding)
+	               .build();
 		z.entry(t.getFile_path());
+		HttpResponse<InputStream> response = null;
 		try { 
-			URL url = new URL(DownloadApplication.getUidaURL()+t.getIdentifier()+"/download");
-			con = (HttpURLConnection) url.openConnection();
-			con.setRequestProperty  ("Authorization", "Basic " + encoding);
-			con.setRequestMethod("GET");
-			InputStream is = con.getInputStream();
-			if (null == is) {
+			response = httpClient.send(request, BodyHandlers.ofInputStream());			
+			if (null == response) {
 				z.getZout().closeEntry();
 			} else {
-				BufferedInputStream in = new BufferedInputStream(is);	
+				BufferedInputStream in = new BufferedInputStream(response.body());	
 				in.transferTo((OutputStream)z.getZout());	//virtaa suoraan käyttäjälle
 				in.close();
 				z.getZout().closeEntry();
-				con.disconnect(); //??
+				System.out.println(response.version().toString());
 			}
-		}catch (IOException e2) {
-			try {
-				int respCode = ((HttpURLConnection)con).getResponseCode();
-				InputStream es = ((HttpURLConnection)con).getErrorStream();
-				if (null == es) {
-					z.getZout().closeEntry();
-				} else {
-					int ret = 0;
-					byte[] buf = new byte[8192];
-					System.err.print("Ida zip virhetilanne "+respCode+": ");
-					System.err.println(t.getIdentifier()+":");
-					while ((ret = es.read(buf)) > 0) {
-						z.getZout().write(buf);
-						System.err.write(buf); 
-						System.err.println();
-					}
-					es.close();
-				}
-				//return new MetaxResponse(respCode, buf.toString());
-			} catch (IOException e3) {
-				System.err.println(e3.getMessage());
-			}
-			System.err.println(e2.getMessage());
+		}catch (IOException | InterruptedException e2) {	
+				int respCode = response.statusCode();				
+				System.err.print("Ida zip virhetilanne "+respCode+": ");
+				System.err.println(t.getIdentifier()+":");
+			    System.err.println(e2.getMessage());
 		}
 	}
 }
