@@ -16,11 +16,23 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpClient.Version;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
+
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Tiedostojen nouto UIDAsta
@@ -30,10 +42,17 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class Tiedostonkäsittely  {
 
+	private final static int NOTHREADS = 4;
 	private HttpServletResponse hsr;
 	String encoding = null; //UIDAn kirjautumistiedot
-	HttpClient httpClient = HttpClient.newBuilder().build();
+	static HttpClient[]  httpClienta = {
+			HttpClient.newBuilder().version(Version.HTTP_1_1).build(),
+			HttpClient.newBuilder().version(Version.HTTP_1_1).build()
+	};
+	static int i = 0;
+
 	
+	private final static Logger LOG = LoggerFactory.getLogger(Tiedostonkäsittely.class);
 	/**
 	 * encoding sisältää UIDAn kirjautumistiedot
 	 */
@@ -117,47 +136,50 @@ public class Tiedostonkäsittely  {
 			System.err.println("UTF-8 ei muka löydy!");
 			e.printStackTrace();
 		}
+		ExecutorService executor = Executors.newFixedThreadPool(NOTHREADS);
+		List<Future<?>> futures = new ArrayList<>();
+		
+		tl.forEach(t -> {   
 
-		tl.forEach(t -> zippaa(t, z));
-		/*try {
-			z.entry("Metadata.json");
-			z.write(metadata);
-		} catch (Exception e) {
-			
-		}*/
-
+            Future tiedostoFuture = executor.submit(() -> {
+        		HttpRequest request = HttpRequest.newBuilder()
+        				.uri(URI.create(DownloadApplication.getUidaURL()+t.getIdentifier()+"/download"))
+        				.header("Authorization", "Basic " + encoding)
+        				.build();	
+        		i++;
+        		int respCode = -1;		
+        		try { 
+        		HttpResponse<InputStream> response = httpClienta[i % httpClienta.length].send(request, BodyHandlers.ofInputStream());						
+        				respCode = response.statusCode();
+        				z.entry(t.getFile_path());
+        				BufferedInputStream in = new BufferedInputStream(response.body());	
+        				in.transferTo((OutputStream)z.getZout());	//virtaa suoraan käyttäjälle
+        				in.close();
+        				z.getZout().closeEntry();
+        				z.release();
+        				System.out.println(response.version().toString());
+        			}catch (IOException e2) {			
+        				System.err.print("Ida zip virhetilanne "+respCode+": ");
+        				System.err.println(t.getIdentifier()+":");
+        				System.err.println(e2.getMessage());
+        				z.release();
+        			} catch (InterruptedException e) {
+        				System.err.print("Ida zip interrup virhetilanne "+respCode+": ");
+        				e.printStackTrace();
+        				z.release();
+        			}
+            
+		});
+            futures.add(tiedostoFuture);
+		});
+		futures.forEach(f -> {
+		    try {
+		        f.get();
+		    } catch (InterruptedException | ExecutionException ex) {
+		        LOG.error("Error waiting for file load", ex);
+		    }
+		});
+		
 		z.sendFinal();
-	}
-
-	/**
-	 * Hakee yhden tiedoston UIDAsta ja lisää sen streamaten zipiin
-	 * 
-	 * @param t Tiedosto tiedosto
-	 * @param z Zip 
-	 */
-	private void zippaa(Tiedosto t, Zip z) {
-		HttpRequest request = HttpRequest.newBuilder()
-	               .uri(URI.create(DownloadApplication.getUidaURL()+t.getIdentifier()+"/download"))
-	               .header("Authorization", "Basic " + encoding)
-	               .build();
-		z.entry(t.getFile_path());
-		HttpResponse<InputStream> response = null;
-		try { 
-			response = httpClient.send(request, BodyHandlers.ofInputStream());			
-			if (null == response) {
-				z.getZout().closeEntry();
-			} else {
-				BufferedInputStream in = new BufferedInputStream(response.body());	
-				in.transferTo((OutputStream)z.getZout());	//virtaa suoraan käyttäjälle
-				in.close();
-				z.getZout().closeEntry();
-				System.out.println(response.version().toString());
-			}
-		}catch (IOException | InterruptedException e2) {	
-				int respCode = response.statusCode();				
-				System.err.print("Ida zip virhetilanne "+respCode+": ");
-				System.err.println(t.getIdentifier()+":");
-			    System.err.println(e2.getMessage());
-		}
 	}
 }
