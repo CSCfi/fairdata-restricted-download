@@ -42,10 +42,12 @@ import org.slf4j.Logger;
  */
 public class Tiedostonkäsittely  {
 
-	private final static int NOTHREADS = 4;
+	private final static int NOTHREADS = 8;
 	private HttpServletResponse hsr;
 	String encoding = null; //UIDAn kirjautumistiedot
 	static HttpClient[]  httpClienta = {
+			HttpClient.newBuilder().version(Version.HTTP_1_1).build(),
+			HttpClient.newBuilder().version(Version.HTTP_1_1).build(),		
 			HttpClient.newBuilder().version(Version.HTTP_1_1).build(),
 			HttpClient.newBuilder().version(Version.HTTP_1_1).build()
 	};
@@ -136,7 +138,7 @@ public class Tiedostonkäsittely  {
 			System.err.println("UTF-8 ei muka löydy!");
 			e.printStackTrace();
 		}
-		ExecutorService executor = Executors.newFixedThreadPool(NOTHREADS);
+		ExecutorService executor = Executors.newFixedThreadPool(NOTHREADS);//Executors.newWorkStealingPool(); ei toimi
 		List<Future<?>> futures = new ArrayList<>();
 		
 		tl.forEach(t -> {   
@@ -157,7 +159,6 @@ public class Tiedostonkäsittely  {
         				in.close();
         				z.getZout().closeEntry();
         				z.release();
-        				System.out.println(response.version().toString());
         			}catch (IOException e2) {			
         				System.err.print("Ida zip virhetilanne "+respCode+": ");
         				System.err.println(t.getIdentifier()+":");
