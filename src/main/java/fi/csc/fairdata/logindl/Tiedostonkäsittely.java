@@ -18,9 +18,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpClient.Version;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,7 +44,8 @@ import org.slf4j.Logger;
  */
 public class Tiedostonkäsittely  {
 
-	private final static int NOTHREADS = 8;
+	private final static int NOTHREADS = 4;
+	private static final int MB = 1048576 ;
 	private HttpServletResponse hsr;
 	String encoding = null; //UIDAn kirjautumistiedot
 	static HttpClient[]  httpClienta = {
@@ -68,17 +71,25 @@ public class Tiedostonkäsittely  {
 	}
 
 	public void tiedosto(Tiedosto t) {
-		HttpURLConnection con = null;
 		BufferedOutputStream bof = null;
-
+		HttpResponse<InputStream> response = null;
+		double alkuaika = System.currentTimeMillis();
 		try { 
-			bof = new BufferedOutputStream(hsr.getOutputStream());
-			//URL url = new URL("https://avaa.tdata.fi/tmp/paituli_78835516.zip");
-			URL url = new URL(DownloadApplication.getUidaURL()+t.getIdentifier()+"/download");
-			con = (HttpURLConnection) url.openConnection();
-			con.setRequestProperty  ("Authorization", "Basic " + encoding);
-			con.setRequestMethod("GET");
-			hsr.setContentLengthLong(con.getContentLength()); //idabytes?
+			bof = new BufferedOutputStream(hsr.getOutputStream(), MB); //1M
+			//System.out.println("Ladattavaksi tuli " + t.getIdentifier());
+			
+			HttpRequest request = HttpRequest.newBuilder()
+    				.uri(URI.create(DownloadApplication.getUidaURL()+t.getIdentifier()+"/download"))
+    				.header("Authorization", "Basic " + encoding)
+    				.build();	
+			response = httpClienta[i % httpClienta.length].send(request, BodyHandlers.ofInputStream());
+			OptionalLong size = response.headers().firstValueAsLong("content-length");
+			if (size.isPresent()) {
+				System.out.println("Ladattavantiedoston koko " + size.getAsLong());
+				hsr.setContentLengthLong(size.getAsLong()); //idabytes?
+			} else {
+				System.err.println("Ladattavantiedoston koko tuntematon");
+			}
 			hsr.setContentType("application/octet-stream; charset=UTF-8");
 			String[] sa = t.getFile_path().split("/");
 			String filename = sa[sa.length-1];
@@ -90,31 +101,36 @@ public class Tiedostonkäsittely  {
 				e.printStackTrace();
 			}
 
-			BufferedInputStream in = new BufferedInputStream(con.getInputStream());	
-			in.transferTo((OutputStream)bof);
+			BufferedInputStream in = new BufferedInputStream(response.body(), MB); //1MB	
+			long tavut = in.transferTo(bof);
+			double erotus = (System.currentTimeMillis() - alkuaika)/1000.0;
+			double megat = tavut/MB;
+			DecimalFormat df = new DecimalFormat("#.####");
+			System.out.println(filename+" siirretty megatavuja: "+megat+" "
+					+df.format(megat/erotus)+"MB/s" );
 			bof.flush();
 			in.close();
-			con.disconnect(); //??
+			//con.disconnect(); //??
 
 		}catch (IOException e2) {
-			try {
-				int respCode = ((HttpURLConnection)con).getResponseCode();
-				InputStream es = ((HttpURLConnection)con).getErrorStream();
-				int ret = 0;
-				byte[] buf = new byte[8192];
+	
+				int respCode = response.statusCode();				
+				//int ret = 0;
+				//byte[] buf = new byte[8192];
 				System.err.print("Ida virhetilanne "+respCode+": ");
 				System.err.println(t.getIdentifier()+":");
-				while ((ret = es.read(buf)) > 0) {
+				/*while ((ret = es.read(buf)) > 0) {
 					bof.write(buf);
 					System.err.write(buf); 
 					System.err.println();
 				}
 				es.close();
-				//return new MetaxResponse(respCode, buf.toString());
-			} catch (IOException e3) {
-				System.err.println(e3.getMessage());
-			}
+				*/
+			
 			System.err.println(e2.getMessage());
+		} catch (InterruptedException e1) {
+			System.err.println("Tiedostodownlaod: InterruptedException: ");
+			e1.printStackTrace();
 		}
 
 	}
