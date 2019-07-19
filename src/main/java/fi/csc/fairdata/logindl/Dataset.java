@@ -40,6 +40,8 @@ public class Dataset {
 			Tiedostonkäsittely tk = new  Tiedostonkäsittely(response);
 			if (1 == p.noOfFiles())
 				tk.tiedosto(sallitut.get(0));
+			else if (0 == p.noOfFiles() && 1 == sallitut.size())
+				tk.tiedosto(sallitut.get(0));
 			else
 				tk.zip(sallitut, id, metadata);
 		} else {

@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
@@ -45,7 +46,12 @@ import org.slf4j.Logger;
 public class Tiedostonkäsittely  {
 
 	private final static int NOTHREADS = 4;
-	private static final int MB = 1048576 ;
+	private static final int MB = 1048576;
+	private static final int MB4= MB*4;
+	private static final String PROTOKOLLA = "https://";
+	private static final String PORTTIDIR = ":4443/files/";
+	private static final String[] UIDAMACHINES =  {"uida1-vip.csc.fi", "uida2-vip.csc.fi", "uida3-vip.csc.fi",
+			"uida4-vip.csc.fi", "uida5-vip.csc.fi"};
 	private HttpServletResponse hsr;
 	String encoding = null; //UIDAn kirjautumistiedot
 	static HttpClient[]  httpClienta = {
@@ -72,17 +78,17 @@ public class Tiedostonkäsittely  {
 
 	public void tiedosto(Tiedosto t) {
 		BufferedOutputStream bof = null;
-		HttpResponse<InputStream> response = null;
+		int respCode = 0;
 		double alkuaika = System.currentTimeMillis();
 		try { 
-			bof = new BufferedOutputStream(hsr.getOutputStream(), MB); //1M
+			bof = new BufferedOutputStream(hsr.getOutputStream(), MB4); //4M
 			//System.out.println("Ladattavaksi tuli " + t.getIdentifier());
-			
+			String uida = UIDAMACHINES[ThreadLocalRandom.current().nextInt(0,5)];
 			HttpRequest request = HttpRequest.newBuilder()
-    				.uri(URI.create(DownloadApplication.getUidaURL()+t.getIdentifier()+"/download"))
+    				.uri(URI.create(PROTOKOLLA+uida+PORTTIDIR+t.getIdentifier()+"/download"))
     				.header("Authorization", "Basic " + encoding)
     				.build();	
-			response = httpClienta[i % httpClienta.length].send(request, BodyHandlers.ofInputStream());
+			HttpResponse<InputStream> response = httpClienta[i % httpClienta.length].send(request, BodyHandlers.ofInputStream());
 			OptionalLong size = response.headers().firstValueAsLong("content-length");
 			if (size.isPresent()) {
 				System.out.println("Ladattavantiedoston koko " + size.getAsLong());
@@ -100,9 +106,15 @@ public class Tiedostonkäsittely  {
 				System.err.println("UTF-8 ei muka löydy!");
 				e.printStackTrace();
 			}
-
-			BufferedInputStream in = new BufferedInputStream(response.body(), MB); //1MB	
+			respCode = response.statusCode();
+			BufferedInputStream in = new BufferedInputStream(response.body(), MB4); //4MB				
 			long tavut = in.transferTo(bof);
+			/*int ret = 0;
+			byte[] buf = new byte[32768];
+			while ((ret = in.read(buf)) > 0) {
+				bof.write(buf);
+				tavut += ret;
+			}*/
 			double erotus = (System.currentTimeMillis() - alkuaika)/1000.0;
 			double megat = tavut/MB;
 			DecimalFormat df = new DecimalFormat("#.####");
@@ -114,7 +126,7 @@ public class Tiedostonkäsittely  {
 
 		}catch (IOException e2) {
 	
-				int respCode = response.statusCode();				
+				
 				//int ret = 0;
 				//byte[] buf = new byte[8192];
 				System.err.print("Ida virhetilanne "+respCode+": ");
@@ -158,10 +170,10 @@ public class Tiedostonkäsittely  {
 		List<Future<?>> futures = new ArrayList<>();
 		
 		tl.forEach(t -> {   
-
+			String uida = UIDAMACHINES[ThreadLocalRandom.current().nextInt(0,5)];
             Future tiedostoFuture = executor.submit(() -> {
         		HttpRequest request = HttpRequest.newBuilder()
-        				.uri(URI.create(DownloadApplication.getUidaURL()+t.getIdentifier()+"/download"))
+        				.uri(URI.create(PROTOKOLLA+uida+PORTTIDIR+t.getIdentifier()+"/download"))
         				.header("Authorization", "Basic " + encoding)
         				.build();	
         		i++;

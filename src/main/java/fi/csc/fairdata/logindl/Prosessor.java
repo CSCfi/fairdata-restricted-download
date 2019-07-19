@@ -31,6 +31,7 @@ public class Prosessor {
         this.dataset = ds;
 		this.auth = auth;
 		if (null != files) {
+			System.out.println(files);
 			lf = Arrays.asList(files.split(","));//.stream().collect(Collectors.toList());
 		} else
 			lf= null;
@@ -84,8 +85,7 @@ public class Prosessor {
 				}
 				if (null != lf) { // parametrina tiedosto/ja
 					// oikeasti voi lisätä zippiin!!!
-					//dsdirs.forEach(d -> selvitähakemistonsisältömetaxista(d.getIdentifier(), tl));	
-					//dsfiles.forEach(f -> selvitätiedostonnimimetaxista(f.identifier, tl));
+					//System.out.println("Debug: "+lf.get(0));
 					return dsfiles.stream().filter(t -> lf.contains(t.getIdentifier())).collect(Collectors.toList());
 				} else { // koko aineisto
 					return dsfiles;
