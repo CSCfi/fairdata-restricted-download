@@ -36,14 +36,17 @@ public class Dataset {
 	public void käsittele() {
 		Prosessor p = new Prosessor(this, file, DownloadApplication.getAuth());
 		List<Tiedosto> sallitut = p.metaxtarkistus(dir);
-		if (null != sallitut && !sallitut.isEmpty()) {
-			Tiedostonkäsittely tk = new  Tiedostonkäsittely(response);
-			if (1 == p.noOfFiles())
+		if (null != sallitut && !sallitut.isEmpty()) {			
+			if (1 == p.noOfFiles()) {
+				Tiedostonkäsittely tk = new  Tiedostonkäsittely(response);
 				tk.tiedosto(sallitut.get(0));
-			else if (0 == p.noOfFiles() && 1 == sallitut.size())
+			} else if (0 == p.noOfFiles() && 1 == sallitut.size()) {
+				Tiedostonkäsittely tk = new  Tiedostonkäsittely(response);			
 				tk.tiedosto(sallitut.get(0));
-			else
-				tk.zip(sallitut, id, metadata);
+			} else {
+				ZipTiedosto zt = new ZipTiedosto(response);
+				zt.zip(sallitut, id, metadata);
+			}
 		} else {
 			p.virheilmoitus(404, "File(s) requested don't exists or dataset has no open files");
 		}
