@@ -56,7 +56,13 @@ public class ZipTiedosto {
 	
 	private final static Logger LOG = LoggerFactory.getLogger(ZipTiedosto.class);
 
+	/**
+	 * Contructori
+	 * 
+	 * @param response HttpServletResponse vastaus etsimelle
+	 */
 	public ZipTiedosto(HttpServletResponse response) {
+		this.hsr = response;
 		try {
 			encoding = Base64.getEncoder().encodeToString((DownloadApplication.getUida()).getBytes("UTF-8"));
 		} catch (UnsupportedEncodingException e) {
