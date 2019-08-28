@@ -21,7 +21,7 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 public class DownloadApplication extends SpringBootServletInitializer {
 	
 	  private static final String PROPERTIES = "/opt/secrets/metax.properties";
-	  private static final String CONFPROPERTIES = "/opt/od/config.properties";
+	  private static final String CONFPROPERTIES = "/opt/login-download/config.properties";
 	  private static String auth;
 	  private static String uida;
 	  private static String metaxURL;
@@ -63,7 +63,7 @@ public class DownloadApplication extends SpringBootServletInitializer {
          in = new FileInputStream(f);
          prop.load(in);
          metaxURL = prop.getProperty("metaxURL").trim();
-         uidaURL = prop.getProperty("uidaURL").trim();
+         uidaURL = prop.getProperty("uidaport").trim();
          in.close();
      }
      catch (IOException ex) {
@@ -74,7 +74,14 @@ public class DownloadApplication extends SpringBootServletInitializer {
 	public static String getMetax() {
 		return metaxURL;
 	}
-	public static String getUidaURL() {
-		return uidaURL;
+	
+	/**
+	 * Ignore machine name=uidaa[0], we are using just port, Because names are in ZipTiedosto
+	 *  
+	 * @return String port
+	 */
+	public static String getUidaPort() {
+		String[] uidaa = uidaURL.split(":");
+		return uidaa[1];
 	}
 }

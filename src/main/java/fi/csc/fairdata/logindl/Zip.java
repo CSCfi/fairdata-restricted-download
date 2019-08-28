@@ -31,14 +31,11 @@ public class Zip {
 	HttpServletResponse response;
 	private final Semaphore available = new Semaphore(1);
 	private final static Logger LOG = LoggerFactory.getLogger(Zip.class);
-	//ParallelScatterZipCreator scatterZipCreator = new ParallelScatterZipCreator();
-	//  ScatterZipOutputStream dirs;
-	
+
 	public Zip(HttpServletResponse r) {
 		
 		try {
 			this.zout = new ZipOutputStream(r.getOutputStream());
-			//dirs = ScatterZipOutputStream.fileBased(File.createTempFile("scatter-dirs", "tmp"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

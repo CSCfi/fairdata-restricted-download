@@ -36,15 +36,16 @@ public class Dataset {
 	public void käsittele() {
 		Prosessor p = new Prosessor(this, file, DownloadApplication.getAuth());
 		List<Tiedosto> sallitut = p.metaxtarkistus(dir);
-		if (null != sallitut && !sallitut.isEmpty()) {			
+		if (null != sallitut && !sallitut.isEmpty()) {	
+			String uidaPort = DownloadApplication.getUidaPort();
 			if (1 == p.noOfFiles()) {
-				Tiedostonkäsittely tk = new  Tiedostonkäsittely(response);
+				Tiedostonkäsittely tk = new  Tiedostonkäsittely(response, uidaPort);
 				tk.tiedosto(sallitut.get(0));
 			} else if (0 == p.noOfFiles() && 1 == sallitut.size()) {
-				Tiedostonkäsittely tk = new  Tiedostonkäsittely(response);			
+				Tiedostonkäsittely tk = new  Tiedostonkäsittely(response, uidaPort);			
 				tk.tiedosto(sallitut.get(0));
 			} else {
-				ZipTiedosto zt = new ZipTiedosto(response);
+				ZipTiedosto zt = new ZipTiedosto(response,uidaPort );
 				zt.zip(sallitut, id, metadata);
 			}
 		} else {

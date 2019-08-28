@@ -28,22 +28,30 @@ import org.slf4j.Logger;
 public class Tiedostonkäsittely  {
 
 
-	private static final int MB = 1048576;
+	public static final int MB = 1048576;
 	private static final int MB4= MB*4;
 	private static final String PROTOKOLLA = "https://";
-	private static final String PORTTIDIR = ":4443/files/";
+	/* production private static final String PORTTIDIR = ":4443/files/";
 	private static final String[] UIDAMACHINES =  {"uida1-vip.csc.fi", "uida2-vip.csc.fi", "uida3-vip.csc.fi",
-			"uida4-vip.csc.fi", "uida5-vip.csc.fi"};
+			"uida4-vip.csc.fi", "uida5-vip.csc.fi"};*/
 	private HttpServletResponse hsr;
 	String encoding = null; //UIDAn kirjautumistiedot
-	
+	private String port;
+	private int machine = ZipTiedosto.PRODUCTION;
 	
 	private final static Logger LOG = LoggerFactory.getLogger(Tiedostonkäsittely.class);
 	/**
 	 * encoding sisältää UIDAn kirjautumistiedot
 	 */
-	public Tiedostonkäsittely(HttpServletResponse response) {
+	public Tiedostonkäsittely(HttpServletResponse response, String port) {
 		this.hsr = response;
+		this.port = port;
+		if (port.equals("4433")) {
+			machine = ZipTiedosto.STABLE;
+			//System.out.println("Machine stable");
+		} /*else {
+			System.out.println("port: " + port);
+		}*/
 		try {
 			encoding = Base64.getEncoder().encodeToString((DownloadApplication.getUida()).getBytes("UTF-8"));
 		} catch (UnsupportedEncodingException e) {
@@ -59,8 +67,9 @@ public class Tiedostonkäsittely  {
 		try { 
 			bof = new BufferedOutputStream(hsr.getOutputStream(), MB4); 
 			//System.out.println("Ladattavaksi tuli " + t.getIdentifier());
-			String uida = UIDAMACHINES[ThreadLocalRandom.current().nextInt(0,5)];
-			URL url = new URL(PROTOKOLLA+uida+PORTTIDIR+t.getIdentifier()+"/download");
+			String uida = ZipTiedosto.UIDAMACHINES[machine][ThreadLocalRandom.current().nextInt(0,5)];
+			//System.out.println("Uida; "+uida);
+			URL url = new URL(PROTOKOLLA+uida+":"+port+ZipTiedosto.DIR+t.getIdentifier()+"/download");
 			con = (HttpURLConnection) url.openConnection();
 			con.setRequestProperty("Authorization", "Basic " + encoding);
 			con.setRequestMethod("GET");
@@ -75,22 +84,23 @@ public class Tiedostonkäsittely  {
 				System.err.println("UTF-8 ei muka löydy!");
 				e.printStackTrace();
 			}
-			respCode = con.getResponseCode();
-			
-			BufferedInputStream in = new BufferedInputStream(con.getInputStream(), MB4); 			
+			respCode = con.getResponseCode();			
+			BufferedInputStream in = new BufferedInputStream(con.getInputStream(), MB4); 
+			//bof.flush();
+			System.out.println("Väliaika, ennen transfer: "+ (System.currentTimeMillis()-alkuaika));
 			long tavut = in.transferTo(bof);
 			double erotus = (System.currentTimeMillis() - alkuaika)/1000.0;
 			double megat = tavut/MB;
 			DecimalFormat df = new DecimalFormat("#.####");
 			System.out.println(filename+" siirretty megatavuja: "+megat+" "
 					+df.format(megat/erotus)+"MB/s" );
-			bof.flush();
+			bof.flush();			
 			in.close();
-			con.disconnect(); 
-
+			bof.close();
+			//con.disconnect(); 
 		}catch (IOException e2) {
 			LOG.error("Ida virhetilanne "+respCode+": ");
-			LOG.error(t.getIdentifier()+":");
+			LOG.error(t.getIdentifier()+":" + e2.getMessage());
 			try {
 				InputStream es = ((HttpURLConnection)con).getErrorStream();	
 				if (null != es) {
@@ -103,12 +113,18 @@ public class Tiedostonkäsittely  {
 						System.err.println();
 					}
 					es.close();
+					bof.close();
 				}
 			} catch (IOException e3) {
 				LOG.error(e3.getMessage());
 			}
 
 			System.err.println(e2.getMessage());
+		} finally {
+			if (null != con)
+				con.disconnect();
+			else 
+				LOG.error("Tiedostonkäsittely: Con was null");
 		}
 	}
 
