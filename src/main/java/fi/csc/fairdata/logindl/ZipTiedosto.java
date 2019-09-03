@@ -91,7 +91,7 @@ public class ZipTiedosto {
 		System.out.println("Zippattavaksi tuli " + tl.size());
 		Zip z = new Zip(hsr);
 		String zipfilename = dsid+".zip";
-		hsr.setContentType("application/octet-stream; charset=UTF-8");
+		hsr.setContentType("application/octet-stream");
 		try {
 			hsr.addHeader("Content-Disposition", "attachment; filename=\""+zipfilename
 					+ "\"; filename*=UTF-8''" +URLEncoder.encode(zipfilename, "UTF-8"));
@@ -113,7 +113,8 @@ public class ZipTiedosto {
 					HttpResponse<InputStream> response = httpClienta[i % httpClienta.length].send(request, BodyHandlers.ofInputStream());						
 					respCode = response.statusCode();
 					z.entry(t.getFile_path());
-					if (t.getFile_path().endsWith("jp2") || t.getFile_path().endsWith("zip") || t.getFile_path().endsWith("gz")) {
+					if (t.getFile_path().endsWith("jp2") || t.getFile_path().endsWith("zip") || t.getFile_path().endsWith("bz2")
+							|| t.getFile_path().endsWith("gz")) {
 						z.getZout().setLevel(Deflater.NO_COMPRESSION);
 						System.out.println("NO_COMPRESSION: " + t.getFile_path());
 					}
