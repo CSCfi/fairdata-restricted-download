@@ -12,6 +12,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Base64;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author pj
  *
@@ -29,6 +32,7 @@ public class Metax {
 	String datasetid;
 	String encoding = null;
 
+	private final static Logger LOG = LoggerFactory.getLogger(Metax.class);
 	
 	public Metax(String id, String auth) {
 		this.datasetid = id;
@@ -75,6 +79,7 @@ public class Metax {
 	MetaxResponse metaxrest(String id, String url, boolean auth, String name ) {
 	StringBuffer content = new StringBuffer();
 	HttpURLConnection con = null;
+	BufferedReader in = null;
 	URL furl = null;
 	try { //+/?cr_identifier="+datasetid "&recursive=true"
 		String optio = name.equals(DIR) || name.equals(FILES) ? FILES : ""; 
@@ -87,7 +92,7 @@ public class Metax {
 		con.setRequestMethod("GET");	
 		if (auth)
 			con.setRequestProperty  ("Authorization", "Basic " + encoding);
-		BufferedReader in = new BufferedReader(
+			in = new BufferedReader(
 				new InputStreamReader(con.getInputStream(), "UTF-8"));//con.getContentEncoding()
 		String inputLine;
 		while ((inputLine = in.readLine()) != null) {
@@ -115,6 +120,20 @@ public class Metax {
         	System.err.println(e3.getMessage());
         }
 		System.err.println(e2.getMessage());
+	}  finally {
+		try {
+			if (null != in)			
+				in.close();
+			else 
+				LOG.error("Metax: in was null");
+		} catch (IOException e) {
+			LOG.error("Metax: IOException:"+e.getMessage());
+			//e.printStackTrace();
+		}
+		if (null != con)
+			con.disconnect();
+		else 
+			LOG.error("Metax: Con was null");
 	}
 
 	return new MetaxResponse(1234, "");

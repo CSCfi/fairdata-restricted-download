@@ -4,6 +4,7 @@
 package fi.csc.fairdata.logindl;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -98,12 +99,9 @@ public class ZipTiedosto {
 			System.err.println("UTF-8 ei muka löydy!");
 			e.printStackTrace();
 		}
-		ExecutorService executor = Executors.newFixedThreadPool(NOTHREADS);//Executors.newWorkStealingPool(); ei toimi
-		List<Future<?>> futures = new ArrayList<>();
 		
 		tl.forEach(t -> {   
 			String uida = UIDAMACHINES[machine][ThreadLocalRandom.current().nextInt(0,5)];
-			Future tiedostoFuture = executor.submit(() -> {
 				HttpRequest request = HttpRequest.newBuilder()
 						.uri(URI.create(PROTOKOLLA+uida+":"+port+DIR+t.getIdentifier()+"/download"))
 						.header("Authorization", "Basic " + encoding)
@@ -120,7 +118,22 @@ public class ZipTiedosto {
 						System.out.println("NO_COMPRESSION: " + t.getFile_path());
 					}
 					BufferedInputStream in = new BufferedInputStream(response.body());	
-					long tavut = in.transferTo((OutputStream)z.getZout());	//virtaa suoraan käyttäjälle
+					long tavut = 0;
+					try {
+						tavut = in.transferTo((OutputStream)z.getZout());	//virtaa suoraan käyttäjälle
+					}catch (IOException e2) {
+						in.close();
+						z.getZout().closeEntry();
+						z.getZout().setLevel(Deflater.BEST_COMPRESSION);
+						z.release();
+					}
+					/*int ret = 0;
+					byte[] buf = new byte[18192];
+					BufferedOutputStream bzout = new BufferedOutputStream(z.getZout(), Tiedostonkäsittely.MB4);
+					while ((ret = in.read(buf)) > 0) {
+						bzout.write(buf);
+						tavut += ret;
+					}*/
 					in.close();
 					z.getZout().closeEntry();
 					z.getZout().setLevel(Deflater.BEST_COMPRESSION);					
@@ -144,15 +157,9 @@ public class ZipTiedosto {
 				}
 
 			});
-			futures.add(tiedostoFuture);
-		});
-		futures.forEach(f -> {
-		    try {
-		        f.get();
-		    } catch (InterruptedException | ExecutionException ex) {
-		        LOG.error("Error waiting for file load", ex);
-		    }
-		});		
+		
+
+		
 		z.sendFinal();
 	}
 	

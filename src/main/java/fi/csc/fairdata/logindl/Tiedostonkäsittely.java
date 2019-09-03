@@ -29,7 +29,7 @@ public class Tiedostonkäsittely  {
 
 
 	public static final int MB = 1048576;
-	private static final int MB4= MB*4;
+	public static final int MB4= MB*4;
 	private static final String PROTOKOLLA = "https://";
 	/* production private static final String PORTTIDIR = ":4443/files/";
 	private static final String[] UIDAMACHINES =  {"uida1-vip.csc.fi", "uida2-vip.csc.fi", "uida3-vip.csc.fi",
@@ -89,6 +89,12 @@ public class Tiedostonkäsittely  {
 			//bof.flush();
 			System.out.println("Väliaika, ennen transfer: "+ (System.currentTimeMillis()-alkuaika));
 			long tavut = in.transferTo(bof);
+			/*int ret = 0;
+			byte[] buf = new byte[18192];
+			while ((ret = in.read(buf)) > 0) {
+				bof.write(buf);
+				tavut += ret;
+			}*/
 			double erotus = (System.currentTimeMillis() - alkuaika)/1000.0;
 			double megat = tavut/MB;
 			DecimalFormat df = new DecimalFormat("#.####");

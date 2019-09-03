@@ -29,7 +29,7 @@ public class Zip {
 	ByteArrayOutputStream baos;
 	ZipOutputStream zout;
 	HttpServletResponse response;
-	private final Semaphore available = new Semaphore(1);
+	//private final Semaphore available = new Semaphore(1);
 	private final static Logger LOG = LoggerFactory.getLogger(Zip.class);
 
 	public Zip(HttpServletResponse r) {
@@ -48,36 +48,37 @@ public class Zip {
 		if (clean.startsWith("/")) // poistetaan jottei zip:ssa ole absolutti polkuja
 			clean = clean.substring(1);
 		try {
-			available.acquire();
+			//available.acquire();
 			zout.putNextEntry(new ZipEntry(clean));
 		} catch (IOException e) {
 			LOG.debug( e.getMessage() );
-			available.release();
-		} catch (InterruptedException e) {
+			//available.release();
+		} /*catch (InterruptedException e) {
 			System.err.println("Zip jonotus keskeytyi: entry");
 			e.printStackTrace();
-		}	
+		}	*/
 	}
 	
 
 	public void sendFinal() {
 		try {
-			available.acquire();
+			//available.acquire();
+			zout.flush();
 			zout.close();
-			available.release();
+			//available.release();
 		} catch (IOException e) {
 			e.printStackTrace();
-		} catch (InterruptedException e) {
+		} /*catch (InterruptedException e) {
 			System.err.println("Zip jonotus keskeytyi: sendfinal");
 			e.printStackTrace();
-		}
+		}*/
 	}
 	ZipOutputStream getZout() {
 		return zout;
 	}
 	
 	public void release() {
-		available.release();
+		//available.release();
 	}
 
 	/**
