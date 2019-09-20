@@ -1,0 +1,9 @@
+[Unit]
+Description = Fairdata Download Service
+After = network.target
+
+[Service]
+ExecStart = /opt/login-download/start-fairdata-download.sh
+
+[Install]
+WantedBy = multi-user.target
