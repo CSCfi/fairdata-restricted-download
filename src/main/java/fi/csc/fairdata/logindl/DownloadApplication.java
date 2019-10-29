@@ -37,7 +37,11 @@ public class DownloadApplication extends SpringBootServletInitializer {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-				
+		System.setProperty("server.jetty.thread-idle-timeout","666000");
+		System.setProperty("server.tomcat.connection-timeout","666000");
+		System.setProperty("server.tomcat.max-threads", "8000");
+		System.setProperty("server.tomcat.accept-count", "2000");
+		System.setProperty("server.connection-timeout","666000");
 		SpringApplication.run(DownloadApplication.class, args);
 	}
 
