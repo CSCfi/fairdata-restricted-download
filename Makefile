@@ -16,6 +16,7 @@ all:
 	export JAVA_HOME=`/usr/libexec/java_home -v 11` && mvn package
 
 up:
+	@test -d secrets || mkdir secrets
 	@test -f secrets/metax.properties || (cp service/metax.properties.template secrets/metax.properties && nano secrets/metax.properties)
 	@test -f id_rsa.pub || cp ~/.ssh/id_rsa.pub .
 	@vagrant --ssh_key=id_rsa.pub --root_password=$(NEW_PASSWORD) --cache_dir=/tmp/fairdata-download-cache up
