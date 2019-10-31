@@ -15,7 +15,7 @@ import java.text.DecimalFormat;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.servlet.http.HttpServletResponse;
-
+import java.util.UUID;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -60,6 +60,8 @@ public class Tiedostonkäsittely  {
 	}
 
 	public void tiedosto(Tiedosto t) {
+		String uuid = UUID.randomUUID().toString();
+		LOG.info("{} | Sending file: {}", uuid, t.getFile_path());
 		BufferedOutputStream bof = null;
 		HttpURLConnection con = null;
 		int respCode = 0;
@@ -71,6 +73,9 @@ public class Tiedostonkäsittely  {
 			//System.out.println("Uida; "+uida);
 			URL url = new URL(PROTOKOLLA+uida+":"+port+ZipTiedosto.DIR+t.getIdentifier()+"/download");
 			con = (HttpURLConnection) url.openConnection();
+			con.setReadTimeout(1000*666);
+			con.setConnectTimeout(1000*666);
+
 			con.setRequestProperty("Authorization", "Basic " + encoding);
 			con.setRequestMethod("GET");
 			hsr.setContentLengthLong(con.getContentLength()); //idabytes?
@@ -81,32 +86,28 @@ public class Tiedostonkäsittely  {
 				hsr.addHeader("Content-Disposition", "attachment; filename=\""+filename
 						+ "\"; filename*=UTF-8''" +URLEncoder.encode(filename, "UTF-8"));
 			} catch (UnsupportedEncodingException e) {
-				System.err.println("UTF-8 ei muka löydy!");
+				LOG.error("{} | UTF-8 ei muka löydy!", uuid);
 				e.printStackTrace();
 			}
-			respCode = con.getResponseCode();			
+			respCode = con.getResponseCode();
+			if (respCode != 200) {
+				hsr.sendError(respCode);
+				LOG.error("{} | Status code: {}", uuid, respCode);
+				throw new IOException("IDA error: " + respCode);
+			}
 			BufferedInputStream in = new BufferedInputStream(con.getInputStream(), MB4); 
-			//bof.flush();
-			System.out.println("Väliaika, ennen transfer: "+ (System.currentTimeMillis()-alkuaika));
+			LOG.info("{} | Väliaika, ennen transfer: {}", uuid, (System.currentTimeMillis()-alkuaika));
 			long tavut = in.transferTo(bof);
-			/*int ret = 0;
-			byte[] buf = new byte[18192];
-			while ((ret = in.read(buf)) > 0) {
-				bof.write(buf);
-				tavut += ret;
-			}*/
 			double erotus = (System.currentTimeMillis() - alkuaika)/1000.0;
 			double megat = tavut/MB;
 			DecimalFormat df = new DecimalFormat("#.####");
-			System.out.println(filename+" siirretty megatavuja: "+megat+" "
-					+df.format(megat/erotus)+"MB/s" );
+			LOG.info("{} | {} siirretty megatavuja: {} {}MB/s", uuid, filename, megat, df.format(megat/erotus) );
 			bof.flush();			
 			in.close();
 			bof.close();
-			//con.disconnect(); 
-		}catch (IOException e2) {
-			LOG.error("Ida virhetilanne "+respCode+": ");
-			LOG.error(t.getIdentifier()+":" + e2.getMessage());
+		} catch (IOException e2) {
+			LOG.error("{} | Ida virhetilanne {}", uuid, respCode);
+			LOG.error("{} | {}: {}", uuid, t.getIdentifier(), e2.getMessage());
 			try {
 				InputStream es = ((HttpURLConnection)con).getErrorStream();	
 				if (null != es) {
@@ -115,23 +116,24 @@ public class Tiedostonkäsittely  {
 
 					while ((ret = es.read(buf)) > 0) {
 						bof.write(buf);
-						System.err.write(buf); 
-						System.err.println();
+						LOG.error("{} | {}", uuid, buf); 
 					}
 					es.close();
 					bof.close();
 				}
 			} catch (IOException e3) {
-				LOG.error(e3.getMessage());
+				LOG.error("{} | {}", uuid, e3.getMessage());
 			}
 
-			System.err.println(e2.getMessage());
+			LOG.error("{} | {}", uuid, e2.getMessage());
 		} finally {
 			if (null != con)
 				con.disconnect();
 			else 
-				LOG.error("Tiedostonkäsittely: Con was null");
+				LOG.error("{} | Tiedostonkäsittely: Con was null", uuid);
 		}
+
+		LOG.info("{} | done: Sending file: {}", uuid, t.getFile_path());
 	}
 
 
