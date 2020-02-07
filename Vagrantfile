@@ -33,6 +33,7 @@ Vagrant.configure("2") do |config|
 
     config.vm.provider "docker" do |d|
         d.build_dir = "."
+        d.dockerfile = "Dockerfile.dev"
         d.has_ssh = true
         d.build_args = [
             '--build-arg', "ssh_key=#{$ssh_key}",
