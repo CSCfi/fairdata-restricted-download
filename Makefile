@@ -11,6 +11,7 @@
 
 SHELL:=/bin/bash
 NEW_PASSWORD:=$(shell openssl rand -base64 32)
+DOWNLOAD_VERSION:=$(shell python -c "import xml.etree.ElementTree as ET;print ET.parse('pom.xml').getroot().find('{http://maven.apache.org/POM/4.0.0}version').text")
 
 all: logindownload.jar
 
@@ -49,14 +50,14 @@ docker-prod: all
 	@echo
 	@echo "Creating production docker image.."
 	@echo
-	@docker rmi fairdownload:1.0
-	@docker image build -t fairdownload:1.0 -f Dockerfile.prod .
+	-@docker rmi fairdownload:$(DOWNLOAD_VERSION)
+	@docker image build -t fairdownload:$(DOWNLOAD_VERSION) -f Dockerfile.prod .
 	@echo
 	@echo "Production docker image built."
 	@echo
 
 docker-prod-run: secrets
-	@docker container run --mount type=bind,source="$(PWD)"/secrets/metax.properties,target=/opt/secrets/metax.properties --mount type=bind,source="$(PWD)"/service/application.properties,target=/opt/login-download/config/application.properties --mount type=bind,source="$(PWD)"/service/config.properties,target=/opt/login-download/config.properties --publish 8433:8433 --detach --name fairdata-download fairdownload:1.0
+	@docker container run --mount type=bind,source="$(PWD)"/secrets/metax.properties,target=/opt/secrets/metax.properties --mount type=bind,source="$(PWD)"/service/application.properties,target=/opt/login-download/config/application.properties --mount type=bind,source="$(PWD)"/service/config.properties,target=/opt/login-download/config.properties --publish 8433:8433 --detach --name fairdata-download fairdownload:$(DOWNLOAD_VERSION)
 
 clean:
 	@rm logindownload.jar
