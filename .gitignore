@@ -26,3 +26,7 @@ hs_err_pid*
 .vagrant
 id_rsa.pub
 secrets
+
+ssl.crt
+ssl.key
+.htpasswd
