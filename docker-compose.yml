@@ -39,7 +39,7 @@ services:
             - downloadnetwork
         deploy:
             mode: replicated
-            replicas: 2
+            replicas: 1
             endpoint_mode: vip
             restart_policy:
                 condition: on-failure
@@ -53,10 +53,6 @@ services:
                 reservations:
                     cpus: '0.5'
                     memory: 512M
-#       logging:
-#           driver: syslog
-#           options:
-#               syslog-address: "tcp://192.168.0.42:123"
         expose:
             - "8433"
         volumes:
@@ -65,11 +61,11 @@ services:
               target: /opt/secrets/metax.properties
               read_only: true
             - type: bind
-              source: ./service/application.properties
+              source: ./secrets/application.properties
               target: /opt/login-download/config/application.properties
               read_only: true
             - type: bind
-              source: ./service/config.properties
+              source: ./secrets/config.properties
               target: /opt/login-download/config.properties
               read_only: true
 
