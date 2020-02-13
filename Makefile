@@ -29,13 +29,28 @@ up: secrets
 
 secrets:
 	@test -d secrets || mkdir secrets
+	make secrets/.htpasswd
+	make secrets/ssl.key
+	make secrets/ssl.crt
+	make secrets/metax.properties
+	make secrets/application.properties
+	make secrets/config.properties
+
+secrets/metax.properties:
 	@test -f secrets/metax.properties || (cp service/metax.properties.template secrets/metax.properties && nano secrets/metax.properties)
+
+secrets/application.properties:
+	@test -f secrets/application.properties || (cp service/application.properties secrets/application.properties && nano secrets/application.properties)
+
+secrets/config.properties:
+	@test -f secrets/config.properties || (cp service/config.properties secrets/config.properties && nano secrets/config.properties)
 
 build: secrets
 	@echo
 	@echo "Building logindownload.jar v$(DOWNLOAD_VERSION)"
 	@echo
 	@rm -f logindownload.jar
+	-@docker rmi -f fairdownload:$(DOWNLOAD_VERSION)-dev
 	@docker image build -t fairdownload:$(DOWNLOAD_VERSION)-dev . -f Dockerfile
 	@docker container run --publish 8433:8433 --detach --name fairdata-download fairdownload:$(DOWNLOAD_VERSION)-dev
 	@docker cp fairdata-download:/opt/login-download/logindownload.jar logindownload.jar
@@ -50,7 +65,7 @@ docker-prod: all
 	@echo
 	@echo "Creating production docker image (fairdownload:$(DOWNLOAD_VERSION)).."
 	@echo
-	-@docker rmi fairdownload:$(DOWNLOAD_VERSION)
+	-@docker rmi -f fairdownload:$(DOWNLOAD_VERSION)
 	@docker image build -t fairdownload:$(DOWNLOAD_VERSION) -f Dockerfile.prod .
 	@echo
 	@echo "Production docker image built."
@@ -68,7 +83,7 @@ secrets/ssl.key: certs
 certs:
 	@test -f secrets/ssl.crt || openssl req -x509 -days 365 -nodes -subj '/C=FI/ST=Uusimaa/L=Espoo/O=CSC - Tieteen tietotekniikan keskus Oy/CN=fairdata-download.csc.local' -addext "subjectAltName = DNS:fairdata-download.csc.local" -addext "extendedKeyUsage = serverAuth" -newkey rsa:2048 -out secrets/ssl.crt -keyout secrets/ssl.key
 
-swarm-deploy: secrets/.htpasswd secrets/ssl.key secrets/ssl.crt
+swarm-deploy: secrets/ssl.crt secrets/ssl.key secrets/metax.properties secrets/application.properties secrets/config.properties
 	@docker stack deploy --compose-file docker-compose.yml fairdownload
 
 swarm-rm:
