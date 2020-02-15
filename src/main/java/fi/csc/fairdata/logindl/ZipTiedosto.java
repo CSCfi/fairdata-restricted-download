@@ -122,6 +122,7 @@ public class ZipTiedosto {
 		OutputStream notbof = (OutputStream)z.getZout();
 
 		hsr.setContentType("application/octet-stream");
+		hsr.addHeader("Transfer-Encoding","chunked");
 
 		try {
 			hsr.addHeader("Content-Disposition", "attachment; filename=\""+zipfilename
@@ -192,7 +193,15 @@ public class ZipTiedosto {
 					}
 					LOG.info("{} | Time used in milliseconds: {}", uuid, (System.currentTimeMillis() - alkuaika));
 					LOG.info("{} | transferred bytes: ", uuid, tavut);
+					in.close();
+					in = null;
+
 					throw e2;
+				} finally {
+					if (in != null) {
+						in.close();
+						in = null;
+					}
 				}
 
 				if (tavut != contentLength) {
@@ -214,6 +223,16 @@ public class ZipTiedosto {
 				LOG.info("{} | Transfer failed", uuid);
 				transfer_failed = true;
 			} finally {
+				if (con != null) {
+					try {
+						con.getInputStream().close();
+					} catch (IOException e) {}
+					try {
+						con.getOutputStream().close();
+					} catch (IOException e) {}
+					con.disconnect();
+					con = null;
+				}
 				try {
 					z.getZout().closeEntry();
 					z.getZout().flush();
@@ -223,6 +242,7 @@ public class ZipTiedosto {
 				if (in != null) {
 					try {
 						in.close();
+						in = null;
 					} catch (IOException e) {
 						LOG.error("{} | in close: {}", uuid, e.getMessage());
 					}
@@ -244,6 +264,8 @@ public class ZipTiedosto {
 			} catch (IOException e) {
 				LOG.error("{} | notbof close: {}", uuid, e.getMessage());
 			}
+
+			notbof = null;
 		}
 
 		LOG.info("{} | total bytes transferred: {}", uuid, totalBytes);
@@ -253,5 +275,6 @@ public class ZipTiedosto {
 		} else {
 			LOG.info("{} | zip done", uuid);
 		}
+		z = null;
 	}
 }

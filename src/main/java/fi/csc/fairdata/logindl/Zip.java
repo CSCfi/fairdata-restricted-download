@@ -93,6 +93,14 @@ public class Zip {
 		} catch (IOException e) {
 			LOG.error("bos flush: {}", e.getMessage());
 		}
+
+		if (bos != null) {
+			bos = null;
+		}
+
+		if (zout != null) {
+			zout = null;
+		}
 	}
 	ZipOutputStream getZout() {
 		return zout;
@@ -100,6 +108,12 @@ public class Zip {
 	
 	public void release() {
 		//available.release();
+		try {
+			zout.flush();
+		} catch (IOException e) {}
+		try {
+			bos.flush();
+		} catch (IOException e) {}
 	}
 
 	/**

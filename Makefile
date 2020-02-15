@@ -75,7 +75,7 @@ docker-prod-run: secrets
 	@docker container run --mount type=bind,source="$(PWD)"/secrets/metax.properties,target=/opt/secrets/metax.properties --mount type=bind,source="$(PWD)"/service/application.properties,target=/opt/login-download/config/application.properties --mount type=bind,source="$(PWD)"/service/config.properties,target=/opt/login-download/config.properties --publish 8433:8433 --detach --name fairdata-download fairdownload:$(DOWNLOAD_VERSION)
 
 secrets/.htpasswd:
-	@htpasswd -db .htpasswd user password
+	@htpasswd -c -db .htpasswd user password
 
 secrets/ssl.crt: certs
 secrets/ssl.key: certs
