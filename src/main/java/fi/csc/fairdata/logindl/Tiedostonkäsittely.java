@@ -19,6 +19,12 @@ import java.util.UUID;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
+// NIO
+import java.io.FileOutputStream;
+import java.net.MalformedURLException;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+
 /**
  * Tiedostojen nouto UIDAsta
  * 
@@ -66,6 +72,10 @@ public class Tiedostonkäsittely  {
 		HttpURLConnection con = null;
 		int respCode = 0;
 		double alkuaika = System.currentTimeMillis();
+
+		// nio
+		ReadableByteChannel readableBC = null;
+		FileOutputStream fileOS = null;
 		try { 
 			bof = new BufferedOutputStream(hsr.getOutputStream(), MB4); 
 			//System.out.println("Ladattavaksi tuli " + t.getIdentifier());
@@ -89,22 +99,30 @@ public class Tiedostonkäsittely  {
 				LOG.error("{} | UTF-8 ei muka löydy!", uuid);
 				e.printStackTrace();
 			}
+
+			// Response code
 			respCode = con.getResponseCode();
 			if (respCode != 200) {
 				hsr.sendError(respCode);
 				LOG.error("{} | Status code: {}", uuid, respCode);
 				throw new IOException("IDA error: " + respCode);
 			}
-			BufferedInputStream in = new BufferedInputStream(con.getInputStream(), MB4); 
-			LOG.info("{} | Väliaika, ennen transfer: {}", uuid, (System.currentTimeMillis()-alkuaika));
-			long tavut = in.transferTo(bof);
-			double erotus = (System.currentTimeMillis() - alkuaika)/1000.0;
-			double megat = tavut/MB;
-			DecimalFormat df = new DecimalFormat("#.####");
-			LOG.info("{} | {} siirretty megatavuja: {} {}MB/s", uuid, filename, megat, df.format(megat/erotus) );
-			bof.flush();			
-			in.close();
-			bof.close();
+			// BufferedInputStream in = new BufferedInputStream(con.getInputStream(), MB4);
+
+			// Nio
+			readableBC = Channels.newChannel(url.openStream());
+			fileOS = new FileOutputStream(filename);
+			fileOS.getChannel().transferFrom(readableBC, 0, Long.MAX_VALUE);
+
+			// LOG.info("{} | Väliaika, ennen transfer: {}", uuid, (System.currentTimeMillis()-alkuaika));
+			// long tavut = in.transferTo(bof);
+			// double erotus = (System.currentTimeMillis() - alkuaika)/1000.0;
+			// double megat = tavut/MB;
+			// DecimalFormat df = new DecimalFormat("#.####");
+			// LOG.info("{} | {} siirretty megatavuja: {} {}MB/s", uuid, filename, megat, df.format(megat/erotus) );
+			// bof.flush();			
+			// in.close();
+			// bof.close();
 		} catch (IOException e2) {
 			LOG.error("{} | Ida virhetilanne {}", uuid, respCode);
 			LOG.error("{} | {}: {}", uuid, t.getIdentifier(), e2.getMessage());
@@ -127,6 +145,20 @@ public class Tiedostonkäsittely  {
 
 			LOG.error("{} | {}", uuid, e2.getMessage());
 		} finally {
+			try {
+				if(fileOS != null){
+				  fileOS.close();
+				}
+			 } catch (IOException e) {
+				e.printStackTrace();
+			 }
+			 try {
+				if(readableBC != null){
+				  readableBC.close();
+				}
+			 } catch (IOException e) {
+				e.printStackTrace();
+			 }
 			if (null != con)
 				con.disconnect();
 			else 
