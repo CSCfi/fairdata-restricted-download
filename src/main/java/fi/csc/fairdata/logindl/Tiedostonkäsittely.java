@@ -78,7 +78,7 @@ public class Tiedostonkäsittely  {
 
 			con.setRequestProperty("Authorization", "Basic " + encoding);
 			con.setRequestMethod("GET");
-			hsr.setContentLengthLong(con.getContentLength()); //idabytes?
+			hsr.setContentLengthLong(con.getContentLengthLong()); //idabytes?
 			hsr.setContentType("application/octet-stream");  		
 			String[] sa = t.getFile_path().split("/");
 			String filename = sa[sa.length-1];
