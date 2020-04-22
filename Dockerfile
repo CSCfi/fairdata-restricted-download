@@ -21,4 +21,4 @@ RUN cp /code/secrets/metax.properties /opt/secrets/metax.properties
 RUN cp /code/secrets/config.properties /opt/login-download/config.properties
 
 EXPOSE 8433
-CMD cd /opt/login-download/ && java -Xmx6g -XX:MaxMetaspaceSize=180M -XX:MaxGCPauseMillis=5000 -jar logindownload.jar
+CMD cd /opt/login-download/ && java -Xmx6g -XX:MaxMetaspaceSize=180M -XX:MaxGCPauseMillis=5000 -jar logindownload.jar --trace
