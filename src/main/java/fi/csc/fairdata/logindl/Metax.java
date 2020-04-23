@@ -23,6 +23,23 @@ public class Metax {
 
 	private final String METAXREST;//"https://metax-test.csc.fi/rest/";
 	private final String METAXDATASETURL; // = METAXREST+"datasets/";
+
+	public String getMETAXREST() {
+		return METAXREST;
+	}
+
+	public String getMETAXDATASETURL() {
+		return METAXDATASETURL;
+	}
+
+	public String getMETAXDIRURL() {
+		return METAXDIRURL;
+	}
+
+	public String getMETAXFILEURL() {
+		return METAXFILEURL;
+	}
+
 	private final String METAXDIRURL;// = METAXREST+"directories/";
 	private final String METAXFILEURL;// = METAXREST+"files/";
 	private final static String FORMAT = "?format=json";
