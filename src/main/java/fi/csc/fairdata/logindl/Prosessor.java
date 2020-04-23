@@ -58,6 +58,7 @@ public class Prosessor {
 
 			//String dsd = dataset.getDir();
 			MetaxResponse vastaus = m.puredataset(dsid);
+			LOG.info("Metax responded with code: {} and content of: {}", vastaus.getCode(), vastaus.getContent());
 			if (vastaus.getCode() == 404) {
 				virheilmoitus(404, "datasetid: "+dsid+ " Not found from metax.\n");
 				return null;

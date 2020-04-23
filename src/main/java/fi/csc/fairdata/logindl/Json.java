@@ -11,6 +11,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -22,7 +24,7 @@ import com.google.gson.JsonObject;
 public class Json {
 	
 	public static final String ACCESSFALSE = "access-false";
-	
+	private final static Logger LOG = LoggerFactory.getLogger(Json.class);
 	public boolean dataset(String vastaus) {
 		Gson gson = new GsonBuilder().create();
 		JsonObject jo = gson.fromJson(vastaus, JsonObject.class);
@@ -37,7 +39,8 @@ public class Json {
 						a.endsWith("embargo"))
 					return true;
 			} catch (java.lang.NullPointerException e) {
-				System.err.println("Muu virhe dataset parsinnassa: "+jo.getAsString());				
+				LOG.error("NullPointerEx in Json parsing with JsonObject: {}", jo.getAsString());
+				e.printStackTrace();
 			}
 		} else {
 			System.err.println("Dataset object parsing failed.");

@@ -104,10 +104,13 @@ public class Metax {
 		if (name.equals(DIR))
 			optio2 =  "&cr_identifier="+datasetid+"&recursive=true&depth=*&file_fields=identifier,file_path&directory_fields=identifier,directory_path";
 		furl = new URL(url+id+optio+FORMAT+optio2);
+		LOG.info("trying to open metax url: {}", furl);
 		long alku =  System.currentTimeMillis();
 		con = (HttpURLConnection) furl.openConnection();
+		LOG.info("metax url opened");
 		con.setRequestMethod("GET");	
 		if (auth)
+			LOG.info("setting authorization for metax request");
 			con.setRequestProperty  ("Authorization", "Basic " + encoding);
 			in = new BufferedReader(
 				new InputStreamReader(con.getInputStream(), "UTF-8"));//con.getContentEncoding()

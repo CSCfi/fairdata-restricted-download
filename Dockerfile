@@ -19,6 +19,7 @@ COPY secrets /code/secrets
 RUN mkdir -p /opt/secrets/
 RUN cp /code/secrets/metax.properties /opt/secrets/metax.properties
 RUN cp /code/secrets/config.properties /opt/login-download/config.properties
+RUN cp /code/secrets/application.properties /opt/login-download/application.properties
 # RUN mkdir /code/logs
 # VOLUME ./logs /code/logs/
 
