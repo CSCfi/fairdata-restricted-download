@@ -72,7 +72,10 @@ public class Prosessor {
 			if (vastaus.getCode() == 404) {
 				virheilmoitus(404, "datasetid: "+dsid+ " lost from metax.\n");
 				return null;
-			}			
+			}
+			if (vastaus.getCode() >= 204) {
+				LOG.info("Metax response was other than 2xx: {}", vastaus.getCode());
+			}
 
 			List<Tiedosto> dsfiles = json.file(vastaus.getContent());
 			if (null != dsfiles) {

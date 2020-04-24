@@ -59,7 +59,7 @@ public class Tiedostonkäsittely  {
 		}
 	}
 
-	public void tiedosto(Tiedosto t) {
+	public void tiedosto(Tiedosto t) throws IOException {
 		String uuid = UUID.randomUUID().toString();
 		LOG.info("{} | Sending file: {}", uuid, t.getFile_path());
 		BufferedOutputStream bof = null;
@@ -72,7 +72,9 @@ public class Tiedostonkäsittely  {
 			String uida = ZipTiedosto.UIDAMACHINES[machine][ThreadLocalRandom.current().nextInt(0,5)];
 			//System.out.println("Uida; "+uida);
 			URL url = new URL(PROTOKOLLA+uida+":"+port+ZipTiedosto.DIR+t.getIdentifier()+"/download");
+			LOG.info("opening uida url: {}", url);
 			con = (HttpURLConnection) url.openConnection();
+			LOG.info("uida url opened");
 			con.setReadTimeout(1000*666);
 			con.setConnectTimeout(1000*666);
 
@@ -90,9 +92,10 @@ public class Tiedostonkäsittely  {
 				e.printStackTrace();
 			}
 			respCode = con.getResponseCode();
+			String cnt = (String) con.getContent();
 			if (respCode != 200) {
 				hsr.sendError(respCode);
-				LOG.error("{} | Status code: {}", uuid, respCode);
+				LOG.error("IDA error: {} | Status code: {} content: {}", uuid, respCode, cnt);
 				throw new IOException("IDA error: " + respCode);
 			}
 			BufferedInputStream in = new BufferedInputStream(con.getInputStream(), MB4); 
@@ -106,7 +109,8 @@ public class Tiedostonkäsittely  {
 			in.close();
 			bof.close();
 		} catch (IOException e2) {
-			LOG.error("{} | Ida virhetilanne {}", uuid, respCode);
+			String cnt = (String) con.getContent();
+			LOG.error("{} | Ida virhetilanne {}, content: {}", uuid, respCode, cnt);
 			LOG.error("{} | {}: {}", uuid, t.getIdentifier(), e2.getMessage());
 			try {
 				InputStream es = ((HttpURLConnection)con).getErrorStream();	

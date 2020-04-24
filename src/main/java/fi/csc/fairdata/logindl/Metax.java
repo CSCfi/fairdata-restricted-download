@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Base64;
 
 import org.slf4j.Logger;
@@ -94,7 +95,7 @@ public class Metax {
 	 * @return MetaxResponse Object with code and content
 	 */
 	MetaxResponse metaxrest(String id, String url, boolean auth, String name ) {
-	StringBuffer content = new StringBuffer();
+	StringBuilder content = new StringBuilder();
 	HttpURLConnection con = null;
 	BufferedReader in = null;
 	URL furl = null;
@@ -125,27 +126,38 @@ public class Metax {
 	} catch (IOException e2) {
 		try {
 		int respCode = ((HttpURLConnection)con).getResponseCode();
+		String cnt = (String) ((HttpURLConnection)con).getContent();
 		InputStream es = ((HttpURLConnection)con).getErrorStream();
 		int ret = 0;
 		byte[] buf = new byte[8192];
-		System.err.print(name +" virhetilanne "+respCode+": ");
+		//System.err.print(name +" virhetilanne "+respCode+": ");
+		LOG.error("IOException with statusCode: {}, content: {}", respCode, cnt);
+		e2.printStackTrace();
+		int i = 0;
         while ((ret = es.read(buf)) > 0) {
-        	content.append(buf);
+        	content.append(Arrays.toString(buf));
         	//System.err.write(buf); 
-        	System.err.println(furl.toString());
+        	//System.err.println(furl.toString());
+			LOG.error("IOException ErrorStream furl: {}: {}", i, furl.toString());
         }
         es.close();
+        LOG.error("IOException ErrorStream content: {}", content.toString());
         return new MetaxResponse(respCode, content.toString());
         } catch (IOException e3) {
         	System.err.println(e3.getMessage());
         }
 		System.err.println(e2.getMessage());
-	}  finally {
+	} catch (Exception ge) {
+		LOG.error("Other error occurred");
+		System.err.println(ge.getMessage());
+		ge.printStackTrace();
+	}
+	finally {
 		try {
 			if (null != in)			
 				in.close();
 			else 
-				LOG.error("Metax: in was null");
+				LOG.error("Metax: BufferedReader close failed");
 		} catch (IOException e) {
 			LOG.error("Metax: IOException:"+e.getMessage());
 			//e.printStackTrace();
@@ -153,14 +165,14 @@ public class Metax {
 		if (null != con)
 			con.disconnect();
 		else 
-			LOG.error("Metax: Con was null");
+			LOG.error("Metax: Connection disconnect failed, connection is null");
 	}
 
 	return new MetaxResponse(1234, "");
 }
 	
 	public String file(String id) {	
-		StringBuffer content = new StringBuffer();
+		StringBuilder content = new StringBuilder();
 		//boolean b = false;
 		HttpURLConnection con = null;
 		try {
