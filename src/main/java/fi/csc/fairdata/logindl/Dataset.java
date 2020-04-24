@@ -7,6 +7,7 @@ package fi.csc.fairdata.logindl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
@@ -37,7 +38,7 @@ public class Dataset {
 	 * 2. Jos tiedostoja on 1 kpl lähetetään se käyttäjälle
 	 * 3. useamman tiedoston tapauksesa ne zipaataan
 	 */
-	public void käsittele() {
+	public void käsittele() throws IOException {
 		Prosessor p = new Prosessor(this, file, DownloadApplication.getAuth());
 		List<Tiedosto> sallitut = p.metaxtarkistus(dir);
 		if (null != sallitut && !sallitut.isEmpty()) {
