@@ -60,7 +60,7 @@ public class Tiedostonkäsittely  {
 		}
 	}
 
-	public void tiedosto(Tiedosto t) throws IOException {
+	public void tiedosto(Tiedosto t) {
 		String uuid = UUID.randomUUID().toString();
 		LOG.info("{} | Sending file: {}", uuid, t.getFile_path());
 		BufferedOutputStream bof = null;
@@ -81,6 +81,7 @@ public class Tiedostonkäsittely  {
 
 			con.setRequestProperty("Authorization", "Basic " + encoding);
 			con.setRequestMethod("GET");
+			LOG.info("IDA connection headers set");
 			hsr.setContentLengthLong(con.getContentLengthLong()); //idabytes?
 			hsr.setContentType("application/octet-stream");  		
 			String[] sa = t.getFile_path().split("/");
@@ -94,6 +95,7 @@ public class Tiedostonkäsittely  {
 			}
 			respCode = con.getResponseCode();
 			String cnt = (String) con.getContent();
+			LOG.info("connection response code and content retrieved");
 			if (respCode != 200) {
 				hsr.sendError(respCode);
 				LOG.error("IDA error: {} | Status code: {} content: {}", uuid, respCode, cnt);
@@ -110,25 +112,30 @@ public class Tiedostonkäsittely  {
 			in.close();
 			bof.close();
 		} catch (IOException e2) {
-			String cnt = (String) con.getContent();
-			LOG.error("{} | Ida virhetilanne {}, content: {}", uuid, respCode, cnt);
-			LOG.error("{} | {}: {}", uuid, t.getIdentifier(), e2.getMessage());
 			try {
-				InputStream es = ((HttpURLConnection)con).getErrorStream();	
-				if (null != es) {
-					int ret = 0;
-					byte[] buf = new byte[8192];
+				String cnt = (String) con.getContent();
+				LOG.error("{} | Ida virhetilanne {}, content: {}", uuid, respCode, cnt);
+				LOG.error("{} | {}: {}", uuid, t.getIdentifier(), e2.getMessage());
+				try {
+					InputStream es = ((HttpURLConnection)con).getErrorStream();
+					if (null != es) {
+						int ret = 0;
+						byte[] buf = new byte[8192];
 
-					while ((ret = es.read(buf)) > 0) {
-						bof.write(buf);
-						LOG.error("{} | {}", uuid, buf); 
+						while ((ret = es.read(buf)) > 0) {
+							bof.write(buf);
+							LOG.error("{} | {}", uuid, buf);
+						}
+						es.close();
+						bof.close();
 					}
-					es.close();
-					bof.close();
+				} catch (IOException e3) {
+					LOG.error("{} | {}", uuid, e3.getMessage());
 				}
-			} catch (IOException e3) {
-				LOG.error("{} | {}", uuid, e3.getMessage());
+			} catch (IOException | NullPointerException ioe){
+				ioe.printStackTrace();
 			}
+
 
 			LOG.error("{} | {}", uuid, e2.getMessage());
 		} finally {
