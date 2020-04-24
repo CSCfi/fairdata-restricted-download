@@ -37,7 +37,7 @@ public class Tiedostonkäsittely  {
 	private HttpServletResponse hsr;
 	String encoding = null; //UIDAn kirjautumistiedot
 	private String port;
-	private int machine = ZipTiedosto.PRODUCTION;
+	private int machine = ZipTiedosto.TEST;
 	
 	private final static Logger LOG = LoggerFactory.getLogger(Tiedostonkäsittely.class);
 	/**
@@ -47,7 +47,8 @@ public class Tiedostonkäsittely  {
 		this.hsr = response;
 		this.port = port;
 		if (port.equals("4433")) {
-			machine = ZipTiedosto.STABLE;
+			//machine = ZipTiedosto.STABLE;
+			machine = ZipTiedosto.TEST;
 			//System.out.println("Machine stable");
 		} /*else {
 			System.out.println("port: " + port);

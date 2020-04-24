@@ -55,15 +55,18 @@ public class ZipTiedosto {
 	private final static int NOTHREADS = 2;
 	public final static int PRODUCTION = 0;
 	public final static int STABLE = 1;
+	public final static int TEST = 2;
 	private static final String PROTOKOLLA = "https://";
 	public static final String DIR = "/files/";
-	public static final String[][] UIDAMACHINES =  {{"uida1-vip.csc.fi", "uida2-vip.csc.fi", "uida3-vip.csc.fi",
-		"uida4-vip.csc.fi", "uida5-vip.csc.fi"},
-			{"ida-stable.csc.fi", "ida-stable.csc.fi", "ida-stable.csc.fi",
-			"ida-stable.csc.fi", "ida-stable.csc.fi"}};
+	public static final String[][] UIDAMACHINES =
+			{
+					{"uida1-vip.csc.fi", "uida2-vip.csc.fi", "uida3-vip.csc.fi", "uida4-vip.csc.fi", "uida5-vip.csc.fi"},
+					{"ida-stable.csc.fi", "ida-stable.csc.fi", "ida-stable.csc.fi", "ida-stable.csc.fi", "ida-stable.csc.fi"},
+					{"ida-test.csc.fi", "ida-test.csc.fi", "ida-test.csc.fi", "ida-test.csc.fi", "ida-test.csc.fi"}
+			};
 	private HttpServletResponse hsr;
 	private String port;
-	private int machine = PRODUCTION;
+	private int machine = TEST;
 	String encoding = null; //UIDAn kirjautumistiedot
 	
 	HttpClient[] httpClienta = {
@@ -86,6 +89,7 @@ public class ZipTiedosto {
 		if (port.equals("4433")) {
 			machine = STABLE;
 		}
+
 		try {
 			encoding = Base64.getEncoder().encodeToString((DownloadApplication.getUida()).getBytes("UTF-8"));
 		} catch (UnsupportedEncodingException e) {
