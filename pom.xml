@@ -7,7 +7,7 @@
   </parent>
   <groupId>fi.csc.fairdata</groupId>
   <artifactId>logindownload</artifactId>
-  <version>0.1.4</version>
+  <version>0.1.5</version>
   <name>fairdata login download</name>
   <description>downloads from UIDA. Called from etsin. Require login</description>
   <properties>
