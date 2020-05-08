@@ -1,4 +1,4 @@
 #!/bin/bash
 pushd /opt/login-download
-java -Xmx12g -XX:MaxMetaspaceSize=180M -XX:MaxGCPauseMillis=5000 -jar logindownload.jar
+java -Xmx6g -XX:MaxMetaspaceSize=180M -verbose -jar logindownload-0.1.5.jar --trace
 popd
