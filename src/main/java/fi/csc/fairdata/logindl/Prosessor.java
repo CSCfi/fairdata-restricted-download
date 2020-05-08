@@ -3,6 +3,9 @@
  */
 package fi.csc.fairdata.logindl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +29,7 @@ public class Prosessor {
 	Zip zip = null;
 	Json json = null;
 	final List<String> lf;
+	private final static Logger LOG = LoggerFactory.getLogger(Prosessor.class);
 	
 	Prosessor(Dataset ds, String files, String auth) {
         this.dataset = ds;
@@ -46,9 +50,15 @@ public class Prosessor {
 
 		String dsid = dataset.getId(); 
 		if (null != dsid) {		
-			m = new Metax(dsid, auth);	
+			m = new Metax(dsid, auth);
+			LOG.info("metax rest: {}", m.getMETAXREST());
+			LOG.info("metax dataset url: {}", m.getMETAXDATASETURL());
+
+
+
 			//String dsd = dataset.getDir();
 			MetaxResponse vastaus = m.puredataset(dsid);
+			LOG.info("Metax responded with code: {} and content of: {}", vastaus.getCode(), vastaus.getContent());
 			if (vastaus.getCode() == 404) {
 				virheilmoitus(404, "datasetid: "+dsid+ " Not found from metax.\n");
 				return null;
@@ -62,7 +72,10 @@ public class Prosessor {
 			if (vastaus.getCode() == 404) {
 				virheilmoitus(404, "datasetid: "+dsid+ " lost from metax.\n");
 				return null;
-			}			
+			}
+			if (vastaus.getCode() >= 204) {
+				LOG.info("Metax response was other than 2xx: {}", vastaus.getCode());
+			}
 
 			List<Tiedosto> dsfiles = json.file(vastaus.getContent());
 			if (null != dsfiles) {
